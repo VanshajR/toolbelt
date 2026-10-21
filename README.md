@@ -117,4 +117,4 @@ Both files are ignored by git. Keep a backup of the keystore: if it's lost, inst
 
 ## License
 
-[MIT](LICENSE)
+Copyright © 2026 Vanshaj Raghuvanshi. All rights reserved. The source is public to read, and you're welcome to install the official releases, but it isn't open source: see [LICENSE](LICENSE).
