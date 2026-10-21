@@ -77,6 +77,7 @@ fun HourLabels() {
 fun TodayTimeline(schedule: SoundSchedule, now: ZonedDateTime) {
     val context = LocalContext.current
     val ink = MaterialTheme.colorScheme.onSurface
+    val halo = MaterialTheme.colorScheme.surface
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val width = maxWidth
@@ -92,7 +93,12 @@ fun TodayTimeline(schedule: SoundSchedule, now: ZonedDateTime) {
                 Box {
                     DayBar(schedule, now, now.toLocalDate(), height = 34.dp)
                     Canvas(Modifier.fillMaxWidth().height(34.dp)) {
-                        drawRect(ink, topLeft = Offset(size.width * dayFraction(now) - 1.5f, 0f), size = Size(3f, size.height))
+                        // An ink line with a light halo, so it reads on dark and light segments alike.
+                        val x = size.width * dayFraction(now)
+                        val line = 2.dp.toPx()
+                        val gap = 2.dp.toPx()
+                        drawRect(halo, topLeft = Offset(x - line / 2 - gap, 0f), size = Size(line + gap * 2, size.height))
+                        drawRect(ink, topLeft = Offset(x - line / 2, 0f), size = Size(line, size.height))
                     }
                 }
             }

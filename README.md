@@ -5,18 +5,19 @@ A small, battery-friendly Android app that collects everyday phone utilities in 
 The first utility is **Sound schedule**. More will be added over time.
 
 <p align="center">
-  <img src="docs/screenshots/schedule.png" width="220" alt="Sound schedule: what's active now, today's timeline, the week and your time windows">
+  <img src="docs/screenshots/schedule.png" width="220" alt="Sound schedule: what's active now, today's timeline and the week">
   &nbsp;
-  <img src="docs/screenshots/editor.png" width="220" alt="Editing a time window: times, days, mode, what still gets through, volumes, fade-in and skip">
+  <img src="docs/screenshots/windows.png" width="220" alt="Time windows, the default profile and calendar mode">
   &nbsp;
-  <img src="docs/screenshots/override.png" width="220" alt="Quick override: pick a mode and how long">
+  <img src="docs/screenshots/editor.png" width="220" alt="Editing a time window: times, days, mode and volumes">
 </p>
 <p align="center">
-  <img src="docs/screenshots/home.png" width="300" alt="Home screen with a live Sound schedule tile">
+  <img src="docs/screenshots/override.png" width="220" alt="Quick override: pick a mode and how long">
   &nbsp;
-  <img src="docs/screenshots/widget.png" width="300" alt="Home-screen widget and Quick Settings tile">
+  <img src="docs/screenshots/settings.png" width="220" alt="Settings: light and dark, colour choices, updates">
+  &nbsp;
+  <img src="docs/screenshots/home.png" width="220" alt="Home screen with a live Sound schedule tile">
 </p>
-<p align="center"><sub>Design mockups; screenshots of the app itself are coming.</sub></p>
 
 ## Sound schedule
 
