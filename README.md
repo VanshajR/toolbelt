@@ -4,6 +4,20 @@ A small, battery-friendly Android app that collects everyday phone utilities in 
 
 The first utility is **Sound schedule**. More will be added over time.
 
+<p align="center">
+  <img src="docs/screenshots/schedule.png" width="220" alt="Sound schedule: what's active now, today's timeline, the week and your time windows">
+  &nbsp;
+  <img src="docs/screenshots/editor.png" width="220" alt="Editing a time window: times, days, mode, what still gets through, volumes, fade-in and skip">
+  &nbsp;
+  <img src="docs/screenshots/override.png" width="220" alt="Quick override: pick a mode and how long">
+</p>
+<p align="center">
+  <img src="docs/screenshots/home.png" width="300" alt="Home screen with a live Sound schedule tile">
+  &nbsp;
+  <img src="docs/screenshots/widget.png" width="300" alt="Home-screen widget and Quick Settings tile">
+</p>
+<p align="center"><sub>Design mockups; screenshots of the app itself are coming.</sub></p>
+
 ## Sound schedule
 
 Set your phone to go quiet (or loud) on a timetable, with everything else handled automatically.
