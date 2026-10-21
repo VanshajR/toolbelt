@@ -79,13 +79,14 @@ fun TodayTimeline(schedule: SoundSchedule, now: ZonedDateTime) {
     val ink = MaterialTheme.colorScheme.onSurface
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val x = maxWidth * dayFraction(now)
+            val width = maxWidth
+            val x = width * dayFraction(now)
             Column {
                 Box(Modifier.height(18.dp).fillMaxWidth()) {
                     Text(
                         formatMinutes(context, now.hour * 60 + now.minute),
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier.offset(x = (x - 16.dp).coerceIn(0.dp, maxWidth - 36.dp)),
+                        modifier = Modifier.offset(x = (x - 16.dp).coerceIn(0.dp, width - 36.dp)),
                     )
                 }
                 Box {

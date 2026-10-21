@@ -70,7 +70,7 @@ Updates only install over an existing copy if both are signed with the same key,
 Open the project in [Android Studio](https://developer.android.com/studio) and press Run, or from a terminal:
 
 ```sh
-gradle assembleDebug
+./gradlew assembleDebug
 ```
 
 Built with Kotlin and Jetpack Compose (Material 3). No third-party libraries beyond AndroidX.
