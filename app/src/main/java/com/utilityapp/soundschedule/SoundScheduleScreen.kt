@@ -12,6 +12,13 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,6 +61,7 @@ import com.utilityapp.ui.Badge
 import com.utilityapp.ui.ChoiceRow
 import com.utilityapp.ui.IconCircle
 import com.utilityapp.ui.ListRow
+import com.utilityapp.ui.Motion
 import com.utilityapp.ui.LocalDarkTheme
 import com.utilityapp.ui.Panel
 import com.utilityapp.ui.RowDivider
@@ -101,139 +109,145 @@ fun SoundScheduleScreen(onBack: () -> Unit) {
         if (granted) update(schedule.copy(calendar = schedule.calendar.copy(enabled = true)))
     }
 
-    when (val e = editing) {
-        is Editing.Window -> {
-            val others = schedule.windows.filter { it.id != e.window.id }
-            WindowEditorScreen(
-                initial = e.window,
-                others = others,
-                isNew = e.isNew,
-                onSave = {
-                    update(schedule.copy(windows = others + it))
-                    editing = null
-                },
-                onDelete = {
-                    update(schedule.copy(windows = others))
-                    editing = null
-                },
-                onClose = { editing = null },
-            )
-            return
-        }
-        Editing.Default -> {
-            DefaultEditorScreen(
-                profile = schedule.defaultProfile,
-                onSave = {
-                    update(schedule.copy(defaultProfile = it))
-                    editing = null
-                },
-                onClose = { editing = null },
-            )
-            return
-        }
-        null -> Unit
-    }
-
     val active = remember(schedule, now) { SoundScheduler.resolve(context, schedule, now) }
+    // Kept out here so the list returns to where it was after closing the editor.
+    val listScroll = rememberScrollState()
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-    ) {
-        ScreenHeader("Sound schedule", onBack = onBack)
-
-        Hero(
-            schedule = schedule,
-            active = active,
-            now = now,
-            onToggle = { update(schedule.copy(enabled = it, override = null)) },
-            onOverride = { showOverride = true },
-            onEndOverride = { update(schedule.copy(override = null)) },
-        )
-
-        SetupCard(permissions, needsCalendar = schedule.calendar.enabled)
-
-        Panel(padding = true) {
-            Text("Today", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold))
-            TodayTimeline(schedule, now)
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            SectionLabel("This week")
-            WeekStrip(schedule, now)
-        }
-
-        SectionTitle("Time windows", trailing = "${schedule.windows.size} of $MAX_WINDOWS")
-        Panel {
-            val activeId = (active as? Active.Window)?.occurrence?.window?.id
-            schedule.windows.sortedBy { it.start }.forEachIndexed { i, window ->
-                if (i > 0) RowDivider()
-                WindowRow(
-                    window = window,
-                    isNow = schedule.enabled && window.id == activeId,
-                    now = now,
-                    onClick = { editing = Editing.Window(window, isNew = false) },
-                    onToggle = { on ->
-                        val clash = if (on) schedule.windows.firstOrNull { it.id != window.id && it.enabled && it.overlaps(window) } else null
-                        if (clash != null) {
-                            Toast.makeText(context, "Overlaps with \"${clash.name}\". Change its times or days first.", Toast.LENGTH_LONG).show()
-                        } else {
-                            update(schedule.copy(windows = schedule.windows.map { if (it.id == window.id) it.copy(enabled = on) else it }))
-                        }
+    AnimatedContent(
+        targetState = editing,
+        transitionSpec = { Motion.push(forward = targetState != null) },
+        label = "editor",
+    ) { e ->
+        when (e) {
+            is Editing.Window -> {
+                val others = schedule.windows.filter { it.id != e.window.id }
+                WindowEditorScreen(
+                    initial = e.window,
+                    others = others,
+                    isNew = e.isNew,
+                    onSave = {
+                        update(schedule.copy(windows = others + it))
+                        editing = null
                     },
+                    onDelete = {
+                        update(schedule.copy(windows = others))
+                        editing = null
+                    },
+                    onClose = { editing = null },
                 )
             }
-            if (schedule.windows.isNotEmpty()) HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
-            TextButton(
-                onClick = { editing = Editing.Window(newWindow(schedule), isNew = true) },
-                enabled = schedule.windows.size < MAX_WINDOWS,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-            ) {
-                Icon(painterResource(R.drawable.ic_plus), null, Modifier.size(18.dp))
-                Text(
-                    if (schedule.windows.size < MAX_WINDOWS) "  Add time window" else "  Maximum of $MAX_WINDOWS windows",
-                    style = MaterialTheme.typography.titleSmall,
+            Editing.Default -> {
+                DefaultEditorScreen(
+                    profile = schedule.defaultProfile,
+                    onSave = {
+                        update(schedule.copy(defaultProfile = it))
+                        editing = null
+                    },
+                    onClose = { editing = null },
                 )
             }
-        }
+            null -> {
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .verticalScroll(listScroll)
+                        .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                ) {
+                    ScreenHeader("Sound schedule", onBack = onBack)
 
-        SectionTitle("Everything else")
-        Panel {
-            val default = schedule.defaultProfile
-            ListRow(
-                title = "Default",
-                subtitle = default.summary(),
-                onClick = { editing = Editing.Default },
-                leading = { IconCircle(default.ringerMode.icon(), default.ringerMode.background(), default.ringerMode.content()) },
-                trailing = { Icon(painterResource(R.drawable.ic_chevron), null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-            )
-            RowDivider()
-            ListRow(
-                title = "Calendar events",
-                subtitle = if (schedule.calendar.enabled) "${schedule.calendar.mode.label} during busy events" else "Go quiet during busy events",
-                leading = { IconCircle(R.drawable.ic_calendar, MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurface) },
-                trailing = {
-                    ToolSwitch(schedule.calendar.enabled, { on ->
-                        if (on && !CalendarSource.hasPermission(context)) {
-                            calendarPermission.launch(Manifest.permission.READ_CALENDAR)
-                        } else {
-                            update(schedule.copy(calendar = schedule.calendar.copy(enabled = on)))
-                        }
-                    })
-                },
-            )
-            if (schedule.calendar.enabled) {
-                Box(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
-                    ChoiceRow(
-                        options = listOf(RingerMode.VIBRATE, RingerMode.SILENT),
-                        selected = schedule.calendar.mode,
-                        onSelect = { update(schedule.copy(calendar = schedule.calendar.copy(mode = it))) },
-                        label = { it.label },
-                        height = 44,
+                    Hero(
+                        schedule = schedule,
+                        active = active,
+                        now = now,
+                        onToggle = { update(schedule.copy(enabled = it, override = null)) },
+                        onOverride = { showOverride = true },
+                        onEndOverride = { update(schedule.copy(override = null)) },
                     )
+
+                    SetupCard(permissions, needsCalendar = schedule.calendar.enabled)
+
+                    Panel(padding = true) {
+                        Text("Today", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold))
+                        TodayTimeline(schedule, now)
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        SectionLabel("This week")
+                        WeekStrip(schedule, now)
+                    }
+
+                    SectionTitle("Time windows", trailing = "${schedule.windows.size} of $MAX_WINDOWS")
+                    Panel {
+                        val activeId = (active as? Active.Window)?.occurrence?.window?.id
+                        schedule.windows.sortedBy { it.start }.forEachIndexed { i, window ->
+                            if (i > 0) RowDivider()
+                            WindowRow(
+                                window = window,
+                                isNow = schedule.enabled && window.id == activeId,
+                                now = now,
+                                onClick = { editing = Editing.Window(window, isNew = false) },
+                                onToggle = { on ->
+                                    val clash = if (on) schedule.windows.firstOrNull { it.id != window.id && it.enabled && it.overlaps(window) } else null
+                                    if (clash != null) {
+                                        Toast.makeText(context, "Overlaps with \"${clash.name}\". Change its times or days first.", Toast.LENGTH_LONG).show()
+                                    } else {
+                                        update(schedule.copy(windows = schedule.windows.map { if (it.id == window.id) it.copy(enabled = on) else it }))
+                                    }
+                                },
+                            )
+                        }
+                        if (schedule.windows.isNotEmpty()) HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                        TextButton(
+                            onClick = { editing = Editing.Window(newWindow(schedule), isNew = true) },
+                            enabled = schedule.windows.size < MAX_WINDOWS,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                        ) {
+                            Icon(painterResource(R.drawable.ic_plus), null, Modifier.size(18.dp))
+                            Text(
+                                if (schedule.windows.size < MAX_WINDOWS) "  Add time window" else "  Maximum of $MAX_WINDOWS windows",
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                        }
+                    }
+
+                    SectionTitle("Everything else")
+                    Panel {
+                        val default = schedule.defaultProfile
+                        ListRow(
+                            title = "Default",
+                            subtitle = default.summary(),
+                            onClick = { editing = Editing.Default },
+                            leading = { IconCircle(default.ringerMode.icon(), default.ringerMode.background(), default.ringerMode.content()) },
+                            trailing = { Icon(painterResource(R.drawable.ic_chevron), null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        )
+                        RowDivider()
+                        ListRow(
+                            title = "Calendar events",
+                            subtitle = if (schedule.calendar.enabled) "${schedule.calendar.mode.label} during busy events" else "Go quiet during busy events",
+                            leading = { IconCircle(R.drawable.ic_calendar, MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurface) },
+                            trailing = {
+                                ToolSwitch(schedule.calendar.enabled, { on ->
+                                    if (on && !CalendarSource.hasPermission(context)) {
+                                        calendarPermission.launch(Manifest.permission.READ_CALENDAR)
+                                    } else {
+                                        update(schedule.copy(calendar = schedule.calendar.copy(enabled = on)))
+                                    }
+                                })
+                            },
+                        )
+                        if (schedule.calendar.enabled) {
+                            Box(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+                                ChoiceRow(
+                                    options = listOf(RingerMode.VIBRATE, RingerMode.SILENT),
+                                    selected = schedule.calendar.mode,
+                                    onSelect = { update(schedule.copy(calendar = schedule.calendar.copy(mode = it))) },
+                                    label = { it.label },
+                                    height = 44,
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -263,8 +277,8 @@ private fun Hero(
 ) {
     val context = LocalContext.current
     val text = if (schedule.enabled) statusText(context, active, schedule, now) else StatusText(null, "Off", "Your sound settings are left alone")
-    val bg = text.mode.background()
-    val fg = text.mode.content()
+    val bg by animateColorAsState(text.mode.background(), Motion.fade(), label = "heroBackground")
+    val fg by animateColorAsState(text.mode.content(), Motion.fade(), label = "heroContent")
     val overriding = schedule.enabled && (active is Active.Manual || active is Active.Paused)
     val label = when {
         !schedule.enabled -> "Schedule"
@@ -295,14 +309,20 @@ private fun Hero(
                     ),
                 )
             }
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Icon(painterResource(text.mode.icon()), null, Modifier.size(36.dp))
-                    Text(text.headline, style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold, fontSize = 40.sp))
+            AnimatedContent(targetState = text, transitionSpec = { Motion.swap() }, label = "heroText") { t ->
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Icon(painterResource(t.mode.icon()), null, Modifier.size(36.dp))
+                        Text(t.headline, style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold, fontSize = 40.sp))
+                    }
+                    Text(t.detail, style = MaterialTheme.typography.bodyLarge)
                 }
-                Text(text.detail, style = MaterialTheme.typography.bodyLarge)
             }
-            if (schedule.enabled) {
+            AnimatedVisibility(
+                visible = schedule.enabled,
+                enter = fadeIn(Motion.fade()) + expandVertically(Motion.fade()),
+                exit = fadeOut(Motion.fade()) + shrinkVertically(Motion.fade()),
+            ) {
                 Button(
                     onClick = if (overriding) onEndOverride else onOverride,
                     colors = ButtonDefaults.buttonColors(containerColor = fg, contentColor = bg),

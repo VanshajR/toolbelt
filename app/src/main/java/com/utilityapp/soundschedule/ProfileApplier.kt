@@ -20,11 +20,11 @@ object ProfileApplier {
         when (profile.ringerMode) {
             RingerMode.SILENT -> enterSilent(audio, notifications, repo, profile.letThrough)
             RingerMode.VIBRATE -> {
-                restoreDnd(notifications, repo)
+                leaveQuiet(notifications, repo)
                 setRingerMode(audio, AudioManager.RINGER_MODE_VIBRATE)
             }
             RingerMode.NORMAL -> {
-                restoreDnd(notifications, repo)
+                leaveQuiet(notifications, repo)
                 setRingerMode(audio, AudioManager.RINGER_MODE_NORMAL)
                 profile.ringVolume?.let { setVolume(audio, AudioManager.STREAM_RING, (it * volumeScale).roundToInt()) }
                 profile.notificationVolume?.let {
@@ -39,6 +39,23 @@ object ProfileApplier {
     /** Called when the schedule is switched off: undo the Do Not Disturb change this app made, if any. */
     fun release(context: Context) {
         restoreDnd(context.getSystemService(NotificationManager::class.java), ScheduleRepository(context))
+    }
+
+    /**
+     * Sound and Vibrate mean the phone should actually make noise, so lift Do Not Disturb
+     * whoever turned it on. On many phones "silent" *is* Do Not Disturb, and changing the ringer
+     * alone leaves it in place. Without DND access Android doesn't allow this; Finish setup asks for it.
+     */
+    private fun leaveQuiet(notifications: NotificationManager, repo: ScheduleRepository) {
+        restoreDnd(notifications, repo, restoreFilter = false)
+        if (!notifications.isNotificationPolicyAccessGranted) return
+        if (notifications.currentInterruptionFilter != NotificationManager.INTERRUPTION_FILTER_ALL) {
+            try {
+                notifications.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
+            } catch (e: SecurityException) {
+                Log.w(TAG, "Could not turn off Do Not Disturb", e)
+            }
+        }
     }
 
     /** Maps a percentage onto the stream's discrete steps, keeping any non-zero percentage audible. */
@@ -87,14 +104,17 @@ object ProfileApplier {
         }
     }
 
-    /** Puts back the user's own Do Not Disturb setup if this app changed it. */
-    private fun restoreDnd(notifications: NotificationManager, repo: ScheduleRepository) {
+    /**
+     * Puts back the user's own Do Not Disturb setup if this app changed it: their priority rules
+     * always, and with [restoreFilter] whether DND was on.
+     */
+    private fun restoreDnd(notifications: NotificationManager, repo: ScheduleRepository, restoreFilter: Boolean = true) {
         val saved = repo.savedDnd ?: return
         if (notifications.isNotificationPolicyAccessGranted) {
             try {
                 notifications.notificationPolicy =
                     Policy(saved.categories, saved.callSenders, saved.messageSenders, saved.visualEffects)
-                notifications.setInterruptionFilter(saved.filter)
+                if (restoreFilter) notifications.setInterruptionFilter(saved.filter)
             } catch (e: SecurityException) {
                 Log.w(TAG, "Could not restore Do Not Disturb", e)
             }

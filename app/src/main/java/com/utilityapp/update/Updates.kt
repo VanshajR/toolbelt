@@ -107,13 +107,18 @@ object Updates {
             return
         }
         if (scheduler.getPendingJob(JOB_ID) != null) return
-        scheduler.schedule(
-            JobInfo.Builder(JOB_ID, ComponentName(context, UpdateCheckJob::class.java))
-                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                .setPeriodic(TimeUnit.DAYS.toMillis(1))
-                .setPersisted(true)
-                .build(),
-        )
+        // Update checks are a nicety; never let scheduling them take the app down.
+        try {
+            scheduler.schedule(
+                JobInfo.Builder(JOB_ID, ComponentName(context, UpdateCheckJob::class.java))
+                    .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                    .setPeriodic(TimeUnit.DAYS.toMillis(1))
+                    .setPersisted(true)
+                    .build(),
+            )
+        } catch (e: Exception) {
+            log("Could not schedule update checks", e)
+        }
     }
 
     fun notifyAvailable(context: Context, release: Release) {

@@ -1,6 +1,10 @@
 package com.utilityapp.ui
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -64,7 +68,9 @@ fun ScreenHeader(
 @Composable
 fun Panel(modifier: Modifier = Modifier, padding: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .animateContentSize(Motion.resize),
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surface,
     ) {
@@ -130,10 +136,11 @@ fun ListRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
+        val alpha by animateFloatAsState(if (dimmed) 0.45f else 1f, Motion.fade(), label = "dim")
         Row(
             Modifier
                 .weight(1f)
-                .alpha(if (dimmed) 0.45f else 1f),
+                .alpha(alpha),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
@@ -203,6 +210,9 @@ fun <T> ChoiceRow(
             val isSelected = option == selected
             val (bg, fg) = selectedColor?.invoke(option)
                 ?: (MaterialTheme.colorScheme.onSurface to MaterialTheme.colorScheme.surface)
+            val container by animateColorAsState(if (isSelected) bg else MaterialTheme.colorScheme.surface, Motion.fade(), label = "choice")
+            val content by animateColorAsState(if (isSelected) fg else MaterialTheme.colorScheme.onSurface, Motion.fade(), label = "choiceContent")
+            val outline by animateColorAsState(if (isSelected) bg else MaterialTheme.colorScheme.outline, Motion.fade(), label = "choiceOutline")
             Surface(
                 selected = isSelected,
                 onClick = { onSelect(option) },
@@ -210,9 +220,9 @@ fun <T> ChoiceRow(
                     .weight(1f)
                     .height(height.dp),
                 shape = RoundedCornerShape(16.dp),
-                color = if (isSelected) bg else MaterialTheme.colorScheme.surface,
-                contentColor = if (isSelected) fg else MaterialTheme.colorScheme.onSurface,
-                border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                color = container,
+                contentColor = content,
+                border = androidx.compose.foundation.BorderStroke(1.dp, outline),
             ) {
                 Column(
                     Modifier.fillMaxSize(),

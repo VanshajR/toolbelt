@@ -3,6 +3,12 @@ package com.utilityapp.soundschedule
 import android.media.AudioManager
 import android.text.format.DateFormat
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -51,6 +57,7 @@ import com.utilityapp.R
 import com.utilityapp.ui.ChoiceRow
 import com.utilityapp.ui.ListRow
 import com.utilityapp.ui.LocalDarkTheme
+import com.utilityapp.ui.Motion
 import com.utilityapp.ui.Panel
 import com.utilityapp.ui.RowDivider
 import com.utilityapp.ui.ScreenHeader
@@ -237,30 +244,36 @@ private fun ProfileFields(profile: SoundProfile, onChange: (SoundProfile) -> Uni
         height = 64,
     )
 
-    if (profile.ringerMode == RingerMode.SILENT) {
-        SectionLabel("Still let through")
-        Panel {
-            val lt = profile.letThrough
-            ListRow(
-                title = "Starred contacts",
-                subtitle = "Calls and messages ring as normal",
-                leading = { Icon(painterResource(R.drawable.ic_star), null, Modifier.size(22.dp)) },
-                trailing = { ToolSwitch(lt.starredContacts, { onChange(profile.copy(letThrough = lt.copy(starredContacts = it))) }) },
-            )
-            RowDivider(inset = 52)
-            ListRow(
-                title = "Repeat callers",
-                subtitle = "Same number twice within 15 minutes",
-                leading = { Icon(painterResource(R.drawable.ic_repeat), null, Modifier.size(22.dp)) },
-                trailing = { ToolSwitch(lt.repeatCallers, { onChange(profile.copy(letThrough = lt.copy(repeatCallers = it))) }) },
-            )
-            RowDivider(inset = 52)
-            ListRow(
-                title = "Alarms",
-                subtitle = "Your alarm clock always rings",
-                leading = { Icon(painterResource(R.drawable.ic_alarm), null, Modifier.size(22.dp)) },
-                trailing = { ToolSwitch(lt.alarms, { onChange(profile.copy(letThrough = lt.copy(alarms = it))) }) },
-            )
+    AnimatedVisibility(
+        visible = profile.ringerMode == RingerMode.SILENT,
+        enter = fadeIn(Motion.fade()) + expandVertically(Motion.fade()),
+        exit = fadeOut(Motion.fade()) + shrinkVertically(Motion.fade()),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            SectionLabel("Still let through")
+            Panel {
+                val lt = profile.letThrough
+                ListRow(
+                    title = "Starred contacts",
+                    subtitle = "Calls and messages ring as normal",
+                    leading = { Icon(painterResource(R.drawable.ic_star), null, Modifier.size(22.dp)) },
+                    trailing = { ToolSwitch(lt.starredContacts, { onChange(profile.copy(letThrough = lt.copy(starredContacts = it))) }) },
+                )
+                RowDivider(inset = 52)
+                ListRow(
+                    title = "Repeat callers",
+                    subtitle = "Same number twice within 15 minutes",
+                    leading = { Icon(painterResource(R.drawable.ic_repeat), null, Modifier.size(22.dp)) },
+                    trailing = { ToolSwitch(lt.repeatCallers, { onChange(profile.copy(letThrough = lt.copy(repeatCallers = it))) }) },
+                )
+                RowDivider(inset = 52)
+                ListRow(
+                    title = "Alarms",
+                    subtitle = "Your alarm clock always rings",
+                    leading = { Icon(painterResource(R.drawable.ic_alarm), null, Modifier.size(22.dp)) },
+                    trailing = { ToolSwitch(lt.alarms, { onChange(profile.copy(letThrough = lt.copy(alarms = it))) }) },
+                )
+            }
         }
     }
 
@@ -338,13 +351,22 @@ private fun DayPicker(days: Set<DayOfWeek>, onChange: (Set<DayOfWeek>) -> Unit) 
         DayOfWeek.entries.forEach { day ->
             val selected = day in days
             val fullName = day.getDisplayName(TextStyle.FULL, Locale.getDefault())
+            val fill by animateColorAsState(
+                if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.surface, Motion.fade(), label = "day",
+            )
+            val ink by animateColorAsState(
+                if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface, Motion.fade(), label = "dayText",
+            )
+            val ring by animateColorAsState(
+                if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline, Motion.fade(), label = "dayRing",
+            )
             Surface(
                 checked = selected,
                 onCheckedChange = { onChange(if (it) days + day else days - day) },
                 shape = CircleShape,
-                color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.surface,
-                contentColor = if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
-                border = if (selected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                color = fill,
+                contentColor = ink,
+                border = BorderStroke(1.dp, ring),
                 modifier = Modifier
                     .size(44.dp)
                     .semantics { contentDescription = fullName },

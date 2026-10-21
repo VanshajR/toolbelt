@@ -8,7 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawing
@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.utilityapp.settings.AppSettings
 import com.utilityapp.settings.SettingsScreen
 import com.utilityapp.ui.HomeScreen
+import com.utilityapp.ui.Motion
 import com.utilityapp.ui.ToolbeltTheme
 import com.utilityapp.update.Updates
 
@@ -64,8 +65,13 @@ private fun App(startRoute: String) {
 
     ToolbeltTheme(settings) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing)) {
-                when (route) {
+            AnimatedContent(
+                targetState = route,
+                transitionSpec = { Motion.push(forward = targetState != ROUTE_HOME) },
+                modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing),
+                label = "screen",
+            ) { screen ->
+                when (screen) {
                     ROUTE_HOME -> HomeScreen(
                         onOpen = { route = it.id },
                         onOpenSettings = { route = ROUTE_SETTINGS },
@@ -79,7 +85,7 @@ private fun App(startRoute: String) {
                         onBack = goHome,
                     )
                     else -> {
-                        val utility = utilities.firstOrNull { it.id == route }
+                        val utility = utilities.firstOrNull { it.id == screen }
                         if (utility != null) utility.content(goHome) else LaunchedEffect(Unit) { goHome() }
                     }
                 }
