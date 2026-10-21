@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Toolbelt</string>
+    <string name="widget_label">Sound schedule</string>
+    <string name="widget_description">What\'s active now, today\'s timeline and a quick Silent button</string>
+    <string name="tile_label">Sound schedule</string>
+</resources>
