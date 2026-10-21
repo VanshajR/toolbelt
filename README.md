@@ -32,7 +32,9 @@ Set your phone to go quiet (or loud) on a timetable, with everything else handle
 - **Skip the next one.** Skip a single occurrence (say, a holiday) without editing the window.
 - **At a glance.** Today's timeline, a week view, a home-screen widget with a one-tap *Silent 1 h*, and an optional Quick Settings tile.
 
-It doesn't run a background service. A single alarm wakes the app at the next change, applies the right profile, and arms the one after, so it uses essentially no battery. Volume changes you make by hand stick until the next scheduled change.
+It doesn't run a background service. A single alarm wakes the app at the next change, applies the right profile, and arms the one after, so it uses essentially no battery. Calendar mode doesn't poll either: Android wakes Toolbelt only when an event is added or changed. Volume changes you make by hand stick until the next scheduled change.
+
+For the most reliable timing, turn on **Strict timing** in Settings. It uses alarm-clock alarms, which Android never delays, at the cost of an alarm icon in the status bar.
 
 ## Install
 
@@ -47,14 +49,15 @@ Requires Android 8.0 or later.
 | Permission | Why |
 | --- | --- |
 | Do Not Disturb access | Switching to Silent and choosing what still gets through. Granted in system settings. |
-| Alarms & reminders | Changes happen on the minute rather than a few minutes late. |
+| Exact alarms | Changes happen on the minute rather than a few minutes late. Granted automatically on Android 13+. |
+| Battery optimisation exemption | Stops phone makers' battery savers from dropping scheduled changes. Asked for in *Finish setup*. |
 | Run at startup | Re-arms the schedule after a reboot. |
 | Calendar (optional) | Only if you turn on calendar mode. Event details never leave the phone. |
 | Notifications | Telling you when an update is out. |
 | Install apps | Installing Toolbelt's own updates. |
 | Internet | Checking GitHub for updates. Nothing else is sent anywhere. |
 
-Some phones (notably Samsung and Xiaomi) stop apps' alarms to save battery. If changes don't happen on time, set Toolbelt's battery usage to *Unrestricted*.
+Some phones (notably Samsung and Xiaomi) stop apps' alarms to save battery. Allow the battery optimisation exemption in *Finish setup*; if changes still run late, set Toolbelt's battery usage to *Unrestricted* in system settings.
 
 ## Updates
 

@@ -86,6 +86,7 @@ class ScheduleRepository(context: Context) {
             })
         }
         put("calendar", JSONObject().put("enabled", schedule.calendar.enabled).put("mode", schedule.calendar.mode.name))
+        put("strict", schedule.strictTiming)
     }
 
     private fun toJson(profile: SoundProfile) = JSONObject().apply {
@@ -129,6 +130,7 @@ class ScheduleRepository(context: Context) {
             calendar = json.optJSONObject("calendar")?.let {
                 CalendarMode(it.getBoolean("enabled"), RingerMode.valueOf(it.getString("mode")))
             } ?: CalendarMode(),
+            strictTiming = json.optBoolean("strict", false),
         )
     }
 

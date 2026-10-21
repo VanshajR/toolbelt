@@ -105,6 +105,8 @@ data class SoundSchedule(
     ),
     val override: Override? = null,
     val calendar: CalendarMode = CalendarMode(),
+    /** Use alarm-clock alarms, which Android never delays, at the cost of a status-bar alarm icon. */
+    val strictTiming: Boolean = false,
 ) {
     /** Occurrences of enabled windows around [now], earliest first. */
     fun occurrencesAround(now: ZonedDateTime, daysAhead: Long = 8): List<Occurrence> =

@@ -3,8 +3,15 @@
 
     <!-- Needed to switch to silent, set what still gets through, and change volumes during Do Not Disturb. -->
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
-    <!-- Lets profile changes happen on the minute instead of "roughly then". -->
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Lets profile changes happen on the minute instead of "roughly then". USE_EXACT_ALARM is
+         granted automatically on Android 13+ (fine outside the Play Store, which restricts it to
+         alarm apps); older versions use SCHEDULE_EXACT_ALARM. -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+    <!-- Asks to be left out of battery optimisation, which some phone makers use to drop alarms. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- Re-arms the schedule after a restart. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Only asked for if the user turns on calendar mode. -->
@@ -56,6 +63,11 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_schedule_info" />
         </receiver>
+
+        <service
+            android:name=".soundschedule.CalendarChangeJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <service
             android:name=".update.UpdateCheckJob"

@@ -31,7 +31,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.utilityapp.soundschedule.ScheduleRepository
 import com.utilityapp.soundschedule.ScheduleTileService
+import com.utilityapp.soundschedule.SoundScheduler
+import com.utilityapp.ui.RowDivider
 import com.utilityapp.update.UpdateSection
 import com.utilityapp.ui.ChoiceRow
 import com.utilityapp.ui.ListRow
@@ -48,6 +51,8 @@ fun SettingsScreen(settings: AppSettings, onChange: (AppSettings) -> Unit, onBac
     val context = LocalContext.current
     val dark = LocalDarkTheme.current
     var tileEnabled by remember { mutableStateOf(ScheduleTileService.isEnabled(context)) }
+    val scheduleRepo = remember { ScheduleRepository(context) }
+    var strictTiming by remember { mutableStateOf(scheduleRepo.load().strictTiming) }
 
     Column(
         Modifier
@@ -97,6 +102,18 @@ fun SettingsScreen(settings: AppSettings, onChange: (AppSettings) -> Unit, onBac
                     ToolSwitch(tileEnabled, onCheckedChange = {
                         ScheduleTileService.setEnabled(context, it)
                         tileEnabled = it
+                    })
+                },
+            )
+            RowDivider(inset = 16)
+            ListRow(
+                title = "Strict timing",
+                subtitle = "Never delayed, even in deep sleep. Shows an alarm icon and your lock screen's \"next alarm\" will show the next change.",
+                trailing = {
+                    ToolSwitch(strictTiming, {
+                        strictTiming = it
+                        scheduleRepo.save(scheduleRepo.load().copy(strictTiming = it))
+                        SoundScheduler.sync(context)
                     })
                 },
             )

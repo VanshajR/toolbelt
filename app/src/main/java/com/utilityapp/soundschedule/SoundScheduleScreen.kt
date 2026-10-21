@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -353,6 +354,13 @@ private fun SetupCard(permissions: PermissionState, needsCalendar: Boolean) {
                 context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:${context.packageName}")))
             })
         }
+        if (!permissions.batteryExempt) {
+            add(Triple("Battery optimisation", "Some phones stop scheduled changes to save battery. Exempting Toolbelt costs almost nothing.") {
+                @android.annotation.SuppressLint("BatteryLife")
+                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${context.packageName}"))
+                context.startActivity(intent)
+            })
+        }
         if (needsCalendar && !permissions.calendar) {
             add(Triple("Calendar access", "Needed to go quiet during your events.") {
                 context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}")))
@@ -380,9 +388,15 @@ private fun SetupCard(permissions: PermissionState, needsCalendar: Boolean) {
     }
 }
 
-private data class PermissionState(val dndAccess: Boolean, val exactAlarms: Boolean, val calendar: Boolean) {
+private data class PermissionState(
+    val dndAccess: Boolean,
+    val exactAlarms: Boolean,
+    val calendar: Boolean,
+    val batteryExempt: Boolean,
+) {
     companion object {
         fun read(context: Context) = PermissionState(
+            batteryExempt = context.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(context.packageName),
             dndAccess = context.getSystemService(NotificationManager::class.java).isNotificationPolicyAccessGranted,
             exactAlarms = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
                 context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms(),

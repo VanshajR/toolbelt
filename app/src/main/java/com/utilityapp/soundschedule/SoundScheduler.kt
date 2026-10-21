@@ -45,8 +45,6 @@ sealed interface Active {
  * alarm corrects itself.
  */
 object SoundScheduler {
-    private const val CALENDAR_POLL_MINUTES = 30L
-
     fun resolve(context: Context, schedule: SoundSchedule, now: ZonedDateTime = ZonedDateTime.now()): Active {
         val override = schedule.override?.takeIf { it.untilMillis == null || it.untilMillis > now.toMillis() }
         val overrideUntil = override?.untilMillis?.let { at(it, now) }
@@ -99,6 +97,7 @@ object SoundScheduler {
         alarms.cancel(pending)
 
         if (!schedule.enabled) {
+            CalendarChangeJob.update(context, watch = false)
             if (repo.lastAppliedKey != null) ProfileApplier.release(context)
             repo.lastAppliedKey = null
             repo.fadeMinutes = 0
@@ -152,19 +151,20 @@ object SoundScheduler {
             .filter { it > nowMillis }
             .minOrNull()
             ?.let { candidates += it }
-        // Calendars change without telling us, so look again every so often.
-        if (schedule.calendar.enabled) candidates += nowMillis + Duration.ofMinutes(CALENDAR_POLL_MINUTES).toMillis()
         if (fadeProgress != null) {
             candidates += nowMillis + (repo.fadeMinutes * 60_000L / 8).coerceAtLeast(30_000L)
         }
 
         candidates.minOrNull()?.let { next ->
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarms.canScheduleExactAlarms()) {
-                alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next, pending)
-            } else {
-                alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next, pending)
+            when {
+                // Alarm-clock alarms are never deferred, even in deep sleep, but show an alarm icon.
+                schedule.strictTiming && canExact(alarms) ->
+                    alarms.setAlarmClock(AlarmManager.AlarmClockInfo(next, openAppIntent(context)), pending)
+                canExact(alarms) -> alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next, pending)
+                else -> alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next, pending)
             }
         }
+        CalendarChangeJob.update(context, schedule.calendar.enabled)
         notifySurfaces(context)
     }
 
@@ -178,6 +178,16 @@ object SoundScheduler {
         // Throws if the tile is switched off in Settings; nothing to refresh then.
         runCatching { TileService.requestListeningState(context, ComponentName(context, ScheduleTileService::class.java)) }
     }
+
+    private fun canExact(alarms: AlarmManager) =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarms.canScheduleExactAlarms()
+
+    private fun openAppIntent(context: Context): PendingIntent = PendingIntent.getActivity(
+        context,
+        0,
+        Intent(context, com.utilityapp.MainActivity::class.java),
+        PendingIntent.FLAG_IMMUTABLE,
+    )
 
     private fun ZonedDateTime.toMillis() = toInstant().toEpochMilli()
 
