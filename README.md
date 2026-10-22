@@ -64,58 +64,6 @@ Some phones (notably Samsung and Xiaomi) stop apps' alarms to save battery. Allo
 
 Toolbelt checks this repository's releases once a day and notifies you when a new version is out. Tap **Update** in Settings to download and install it. Android 12 and later may install it without a prompt; otherwise Android shows one confirmation screen. You can turn automatic checks off in Settings.
 
-Updates only install over an existing copy if both are signed with the same key, so every release is signed with the project's release key.
-
-## Building from source
-
-Open the project in [Android Studio](https://developer.android.com/studio) and press Run, or from a terminal:
-
-```sh
-./gradlew assembleDebug
-```
-
-Built with Kotlin and Jetpack Compose (Material 3). No third-party libraries beyond AndroidX.
-
-### Project layout
-
-```
-app/src/main/java/com/utilityapp/
-├── MainActivity.kt          App shell and navigation
-├── Utilities.kt             The list of utilities shown on the home screen
-├── settings/                Theme and app-wide settings
-├── ui/                      Theme, shared components
-├── update/                  Update checks and self-install
-└── soundschedule/           The Sound schedule utility
-    ├── Model.kt             Windows, profiles, overrides
-    ├── SoundScheduler.kt    Works out what applies now and arms the next alarm
-    ├── ProfileApplier.kt    Ringer mode, volumes, Do Not Disturb
-    ├── ScheduleWidget.kt    Home-screen widget
-    └── ScheduleTileService.kt  Quick Settings tile
-```
-
-### Adding a utility
-
-1. Create a package for it under `app/src/main/java/com/utilityapp/`.
-2. Write its screen and a small home-screen tile composable.
-3. Add an entry to the `utilities` list in `Utilities.kt`.
-
-## Releasing
-
-1. Bump `versionCode` and `versionName` in `app/build.gradle.kts` and commit.
-2. Tag and push: `git tag v1.1.0 && git push origin v1.1.0`.
-3. The [Release workflow](.github/workflows/release.yml) builds, signs and publishes the APK.
-
-The workflow needs four repository secrets: `KEYSTORE_BASE64` (the release keystore, base64-encoded), `KEYSTORE_PASSWORD`, `KEY_ALIAS` and `KEY_PASSWORD`. For local release builds, put the same details in a `keystore.properties` file at the project root:
-
-```properties
-storeFile=release.jks
-storePassword=...
-keyAlias=toolbelt
-keyPassword=...
-```
-
-Both files are ignored by git. Keep a backup of the keystore: if it's lost, installed copies can't be updated and have to be reinstalled.
-
 ## License
 
 Copyright © 2026 Vanshaj Raghuvanshi. All rights reserved. The source is public to read, and you're welcome to install the official releases, but it isn't open source: see [LICENSE](LICENSE).
